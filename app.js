@@ -226,6 +226,33 @@
         document.getElementById(id).classList.remove('active');
     }
 
+    function showConfirm(title, message, onConfirm) {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('confirmTitle');
+        const msgEl = document.getElementById('confirmMessage');
+        const okBtn = document.getElementById('confirmOk');
+        const cancelBtn = document.getElementById('confirmCancel');
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        modal.classList.add('active');
+
+        const handleOk = () => {
+            onConfirm();
+            close();
+        };
+
+        const close = () => {
+            modal.classList.remove('active');
+            okBtn.removeEventListener('click', handleOk);
+            cancelBtn.removeEventListener('click', close);
+        };
+
+        okBtn.addEventListener('click', handleOk);
+        cancelBtn.addEventListener('click', close);
+        modal.onclick = (e) => { if (e.target === modal) close(); };
+    }
+
     // ===== Course Management =====
     let selectedColor = '#6C63FF';
 
@@ -257,7 +284,6 @@
             const { error } = await supabase.from('courses').delete().eq('id', id);
             if (error) throw error;
             showToast(`"${course?.name || 'Ders'}" silindi.`, 'info');
-            fireConfetti();
             loadData();
         } catch (error) {
             showToast('Ders silinemedi: ' + error.message, 'error');
@@ -526,7 +552,14 @@
         grid.querySelectorAll('.btn-attend').forEach(btn => btn.onclick = () => markAttended(btn.dataset.id));
         grid.querySelectorAll('.btn-absent').forEach(btn => btn.onclick = () => markAbsent(btn.dataset.id));
         grid.querySelectorAll('.btn-toggle-active').forEach(btn => btn.onclick = () => toggleActive(btn.dataset.id));
-        grid.querySelectorAll('.btn-delete').forEach(btn => btn.onclick = () => { if (confirm('Bu dersi silmek istediğinize emin misiniz?')) deleteCourse(btn.dataset.id); });
+        grid.querySelectorAll('.btn-delete').forEach(btn => btn.onclick = () => { 
+            const course = state.courses.find(c => c.id === btn.dataset.id);
+            showConfirm(
+                'Dersi Sil?', 
+                `"${course?.name}" dersini ve tüm kayıtlarını silmek istediğinize emin misiniz?`, 
+                () => deleteCourse(btn.dataset.id)
+            ); 
+        });
     }
 
     function escapeHtml(text) {
@@ -697,7 +730,13 @@
         });
 
         document.querySelectorAll('.schedule-slot-delete').forEach(btn => {
-            btn.onclick = () => deleteScheduleEntry(btn.dataset.id);
+            btn.onclick = () => {
+                showConfirm(
+                    'Program Girişini Sil?',
+                    'Bu ders saatini programdan silmek istediğinize emin misiniz?',
+                    () => deleteScheduleEntry(btn.dataset.id)
+                );
+            };
         });
     }
 
