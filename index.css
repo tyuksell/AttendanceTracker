@@ -590,6 +590,21 @@ body {
 
 @media (max-width: 768px) {
     body { font-size: 15px; }
+    /* Mobil Performans İyileştirmeleri */
+    .bg-blob { 
+        animation: none; 
+        filter: blur(40px); 
+        opacity: 0.15; 
+    }
+    .glass-card { 
+        backdrop-filter: blur(8px); 
+        -webkit-backdrop-filter: blur(8px); 
+        background: rgba(51, 65, 85, 0.9); 
+    }
+    .top-nav, .mobile-bottom-nav {
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
     .top-nav { padding: 12px 20px; }
     .nav-actions { display: none; } /* Actions moved to bottom nav */
     
