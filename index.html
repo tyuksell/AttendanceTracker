@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Premium SaaS Derse Katılım Takip Dashboard'u - Derslerinizi takip edin, devamsızlığınızı yönetin.">
+    <title>AttendX | Katılım Takip</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+    <!-- ===== AUTH OVERLAY ===== -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="bg-blob blob-1"></div>
+        <div class="bg-blob blob-2"></div>
+        <div class="bg-blob blob-3"></div>
+        <div class="auth-card glass-card">
+            <div class="auth-brand">
+                <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+                <div>
+                    <h1>AttendX</h1>
+                    <span class="brand-tagline">Katılım Takip Sistemi</span>
+                </div>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabLogin">Giriş Yap</button>
+                <button class="auth-tab" id="tabRegister">Kayıt Ol</button>
+            </div>
+            <div id="authError" class="auth-error" style="display:none;"></div>
+            <div class="form-group">
+                <label for="authEmail"><i class="fas fa-envelope"></i> E-posta</label>
+                <input type="email" id="authEmail" placeholder="ornek@mail.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="authPassword"><i class="fas fa-lock"></i> Şifre</label>
+                <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="btn btn-primary auth-submit" id="authSubmit">
+                <i class="fas fa-sign-in-alt"></i> <span id="authSubmitText">Giriş Yap</span>
+            </button>
+            <div id="authRegisterNote" style="display:none; font-size:12px; color:var(--text-muted); text-align:center; margin-top:8px;">
+                Kayıt sonrası e-postanızı doğrulamanız gerekebilir.
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MAIN APP ===== -->
+    <div id="mainApp" style="display:none;">
+
+        <!-- Background Blobs -->
+        <div class="bg-blob blob-1"></div>
+        <div class="bg-blob blob-2"></div>
+        <div class="bg-blob blob-3"></div>
+
+        <!-- Top Navigation -->
+        <nav class="top-nav" id="topNav">
+            <div class="nav-brand">
+                <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+                <div class="brand-text">
+                    <h1>AttendX</h1>
+                    <span class="brand-tagline">Katılım Takip Sistemi</span>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <div class="live-clock" id="liveClock">
+                    <i class="fas fa-clock"></i>
+                    <span id="clockTime">--:--</span>
+                </div>
+                <button class="btn btn-ghost" id="btnSchedule" title="Ders Programı">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Ders Programı</span>
+                </button>
+                <button class="btn btn-primary" id="btnAddCourse" title="Ders Ekle">
+                    <i class="fas fa-plus"></i>
+                    <span>Ders Ekle</span>
+                </button>
+                <button class="btn btn-ghost" id="btnSignOut" title="Çıkış">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <!-- Stats Overview -->
+            <section class="stats-overview" id="statsOverview">
+                <div class="stat-card glass-card">
+                    <div class="stat-icon" style="--accent: #6C63FF;"><i class="fas fa-book-open"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalCourses">—</span>
+                        <span class="stat-label">Toplam Ders</span>
+                    </div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-icon" style="--accent: #00D9A6;"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="avgAttendance">—</span>
+                        <span class="stat-label">Ort. Katılım</span>
+                    </div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-icon" style="--accent: #FF6B6B;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="warningCount">—</span>
+                        <span class="stat-label">Uyarı</span>
+                    </div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-icon" style="--accent: #FFD93D;"><i class="fas fa-fire"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="activeNow">—</span>
+                        <span class="stat-label">Şu An Derste</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section" id="chartsSection">
+                <div class="chart-card glass-card">
+                    <div class="chart-header">
+                        <h2><i class="fas fa-chart-line"></i> Haftalık Katılım Trendi</h2>
+                    </div>
+                    <div class="chart-body"><canvas id="weeklyChart"></canvas></div>
+                </div>
+                <div class="chart-card glass-card chart-card-small">
+                    <div class="chart-header">
+                        <h2><i class="fas fa-chart-pie"></i> Ders Bazlı Katılım</h2>
+                    </div>
+                    <div class="circular-progress-container" id="circularProgressContainer">
+                        <div class="empty-chart-msg" id="emptyChartMsg">
+                            <i class="fas fa-chart-bar"></i>
+                            <p>Henüz ders eklenmedi</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Course Cards Grid -->
+            <section class="courses-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-layer-group"></i> Derslerim</h2>
+                </div>
+                <div class="courses-grid" id="coursesGrid">
+                    <div class="empty-state glass-card" id="emptyState">
+                        <div class="empty-icon"><i class="fas fa-folder-open"></i></div>
+                        <h3>Henüz ders eklenmedi</h3>
+                        <p>Başlamak için yukarıdaki "Ders Ekle" butonuna tıklayın.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Add Course Modal -->
+        <div class="modal-overlay" id="addCourseModal">
+            <div class="modal glass-card" id="addCourseModalContent">
+                <div class="modal-header">
+                    <h2><i class="fas fa-plus-circle"></i> Yeni Ders Ekle</h2>
+                    <button class="modal-close" id="closeAddCourse"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="courseName"><i class="fas fa-book"></i> Ders Adı</label>
+                        <input type="text" id="courseName" placeholder="Örn: Matematik 101" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="courseInstructor"><i class="fas fa-user-tie"></i> Öğretim Üyesi</label>
+                        <input type="text" id="courseInstructor" placeholder="Örn: Prof. Dr. Ahmet Yılmaz" autocomplete="off">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="totalHours"><i class="fas fa-hourglass-half"></i> Toplam Ders Saati</label>
+                            <input type="number" id="totalHours" placeholder="Örn: 42" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="absenceLimit"><i class="fas fa-percentage"></i> Devamsızlık Sınırı (%)</label>
+                            <input type="number" id="absenceLimit" placeholder="Örn: 30" min="1" max="100" value="30">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseColor"><i class="fas fa-palette"></i> Ders Rengi</label>
+                        <div class="color-picker" id="colorPicker">
+                            <button class="color-swatch active" data-color="#6C63FF" style="--swatch:#6C63FF;"></button>
+                            <button class="color-swatch" data-color="#00D9A6" style="--swatch:#00D9A6;"></button>
+                            <button class="color-swatch" data-color="#FF6B6B" style="--swatch:#FF6B6B;"></button>
+                            <button class="color-swatch" data-color="#FFD93D" style="--swatch:#FFD93D;"></button>
+                            <button class="color-swatch" data-color="#4ECDC4" style="--swatch:#4ECDC4;"></button>
+                            <button class="color-swatch" data-color="#FF8A5C" style="--swatch:#FF8A5C;"></button>
+                            <button class="color-swatch" data-color="#A78BFA" style="--swatch:#A78BFA;"></button>
+                            <button class="color-swatch" data-color="#F472B6" style="--swatch:#F472B6;"></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-ghost" id="cancelAddCourse">İptal</button>
+                    <button class="btn btn-primary" id="saveCourse"><i class="fas fa-save"></i> Kaydet</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Modal -->
+        <div class="modal-overlay" id="scheduleModal">
+            <div class="modal glass-card modal-lg" id="scheduleModalContent">
+                <div class="modal-header">
+                    <h2><i class="fas fa-calendar-alt"></i> Haftalık Ders Programı</h2>
+                    <button class="modal-close" id="closeSchedule"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="schedule-toolbar">
+                        <button class="btn btn-primary btn-sm" id="btnAddScheduleEntry">
+                            <i class="fas fa-plus"></i> Ders Saati Ekle
+                        </button>
+                    </div>
+                    <div class="schedule-grid" id="scheduleGrid">
+                        <div class="schedule-day" data-day="Pazartesi">
+                            <div class="day-header">Pazartesi</div>
+                            <div class="day-slots" id="slots-Pazartesi"></div>
+                        </div>
+                        <div class="schedule-day" data-day="Salı">
+                            <div class="day-header">Salı</div>
+                            <div class="day-slots" id="slots-Salı"></div>
+                        </div>
+                        <div class="schedule-day" data-day="Çarşamba">
+                            <div class="day-header">Çarşamba</div>
+                            <div class="day-slots" id="slots-Çarşamba"></div>
+                        </div>
+                        <div class="schedule-day" data-day="Perşembe">
+                            <div class="day-header">Perşembe</div>
+                            <div class="day-slots" id="slots-Perşembe"></div>
+                        </div>
+                        <div class="schedule-day" data-day="Cuma">
+                            <div class="day-header">Cuma</div>
+                            <div class="day-slots" id="slots-Cuma"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Schedule Entry Modal -->
+        <div class="modal-overlay" id="addScheduleEntryModal">
+            <div class="modal glass-card" id="addScheduleEntryModalContent">
+                <div class="modal-header">
+                    <h2><i class="fas fa-clock"></i> Ders Saati Ekle</h2>
+                    <button class="modal-close" id="closeAddScheduleEntry"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="scheduleDay"><i class="fas fa-calendar-day"></i> Gün</label>
+                        <select id="scheduleDay">
+                            <option value="Pazartesi">Pazartesi</option>
+                            <option value="Salı">Salı</option>
+                            <option value="Çarşamba">Çarşamba</option>
+                            <option value="Perşembe">Perşembe</option>
+                            <option value="Cuma">Cuma</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduleCourse"><i class="fas fa-book"></i> Ders</label>
+                        <input type="text" id="scheduleCourse" placeholder="Ders adını yazın..." list="courseList" autocomplete="off">
+                        <datalist id="courseList"></datalist>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="scheduleStart"><i class="fas fa-play"></i> Başlangıç</label>
+                            <input type="time" id="scheduleStart" value="09:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="scheduleEnd"><i class="fas fa-stop"></i> Bitiş</label>
+                            <input type="time" id="scheduleEnd" value="10:00">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduleRoom"><i class="fas fa-door-open"></i> Derslik</label>
+                        <input type="text" id="scheduleRoom" placeholder="Örn: A-201" autocomplete="off">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-ghost" id="cancelAddScheduleEntry">İptal</button>
+                    <button class="btn btn-primary" id="saveScheduleEntry"><i class="fas fa-save"></i> Kaydet</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Bottom Navigation -->
+        <nav class="mobile-bottom-nav">
+            <button class="nav-item active" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+                <i class="fas fa-home"></i><span>Ana Sayfa</span>
+            </button>
+            <button class="nav-item" id="btnMobileSchedule">
+                <i class="fas fa-calendar-alt"></i><span>Program</span>
+            </button>
+            <div class="nav-fab-container">
+                <button class="nav-fab" id="btnMobileAdd"><i class="fas fa-plus"></i></button>
+            </div>
+            <button class="nav-item" onclick="document.getElementById('statsOverview').scrollIntoView({behavior:'smooth'})">
+                <i class="fas fa-chart-pie"></i><span>Analiz</span>
+            </button>
+            <button class="nav-item" onclick="document.getElementById('coursesGrid').scrollIntoView({behavior:'smooth'})">
+                <i class="fas fa-layer-group"></i><span>Dersler</span>
+            </button>
+        </nav>
+
+    </div><!-- /mainApp -->
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
